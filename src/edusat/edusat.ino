@@ -122,8 +122,9 @@ void loop() {
 
 /** ボタンの割り込み関数 */
 void IRAM_ATTR onButton() {
-  if (millis() > interrupt_prev_ms + 100) {
+  if (millis() > interrupt_prev_ms + 500) {
     led_state = !led_state;
+    state = (state + 1) % 3;
     interrupt_prev_ms = millis();
   }
 }
@@ -253,19 +254,23 @@ void startSendObnizTask() {
 
 /** 待機状態 */
 void stand_by() {
-  while (1) {
-    digitalWrite(pin_led, led_state);
-  };
+  digitalWrite(pin_led, led_state);
 }
 
 /** 目標地点へ走行 */
 void drive() {
-
+  forward(255);
+  delay(5000);
+  stop();
+  delay(2000);
+  back(100);
+  delay(5000);
+  stop();
+  delay(2000);
 }
 
 /** 目標地点に到着 */
 void goal() {
-  while (1);
 }
 
 /** ObnizOSの初期化処理 */
@@ -319,6 +324,7 @@ void sd_init() {
 
   if (cardType == CARD_NONE) {
     Serial.println("No SD card attached.");
+    // 初期化に失敗したらエラー音を鳴らす
     beep(beep_error, sizeof(beep_error) / sizeof(float), 180);
     return;
   }
@@ -338,6 +344,7 @@ void sd_init() {
   Serial.printf("SD Card Size: %lluMB\n", cardSize);
 
   writeFile(SD, "/100kinsat.txt", "Hello 100kinSAT!!!");
+  writeFile(SD, "/2022-06-18-build-check.txt", "動作確認: 2022年6月18日");
 }
 
 /** 9軸センサの初期化処理 */
@@ -345,8 +352,10 @@ void mpu_init() {
   Wire.begin();
   delay(2000);
 
+  // if (!mpu.setup(0x69)) { // サイとハリネズミはI2Cアドレスが違う
   if (!mpu.setup(0x68)) {
     Serial.println("MPU connection failed.");
+    // 初期化に失敗したらエラー音を鳴らす
     beep(beep_error, sizeof(beep_error) / sizeof(float), 180);
     return;
   }
@@ -359,7 +368,7 @@ void mpu_init() {
   // 加速度/ジャイロセンサのキャリブレーション
   // キャリブレーション中はCanSatを平らな地面で静止させておく
   beep(beep_start, sizeof(beep_start) / sizeof(float), 150);
-  delay(1000);
+  delay(500);
   mpu.calibrateAccelGyro();
   beep(beep_end, sizeof(beep_end) / sizeof(float), 150);
 
@@ -368,7 +377,7 @@ void mpu_init() {
   // 地磁気センサのキャリブレーション
   // キャリブレーション中はCanSatをぐるぐる回転させる
   beep(beep_start, sizeof(beep_start) / sizeof(float), 150);
-  delay(1000);
+  delay(500);
   mpu.calibrateMag();
   beep(beep_end, sizeof(beep_end) / sizeof(float), 150);
 
@@ -382,9 +391,12 @@ void gps_init() {
 
 /** 前進 */
 void forward(int pwm) {
+  if (pwm < 0) pwm = 0;
+  if (pwm > 255) pwm = 255;
+
   // 左モータ（CCW，反時計回り）
-  digitalWrite(pin_motor_A[1], LOW);
-  digitalWrite(pin_motor_A[0], HIGH);
+  digitalWrite(pin_motor_A[0], LOW);
+  digitalWrite(pin_motor_A[1], HIGH);
   ledcWrite(CHANNEL_A, pwm);
 
   // 右モータ（CW，時計回り）
@@ -395,9 +407,12 @@ void forward(int pwm) {
 
 /** 後退 */
 void back(int pwm) {
+  if (pwm < 0) pwm = 0;
+  if (pwm > 255) pwm = 255;
+
   // 左モータ（CW，時計回り）
-  digitalWrite(pin_motor_A[0], LOW);
-  digitalWrite(pin_motor_A[1], HIGH);
+  digitalWrite(pin_motor_A[1], LOW);
+  digitalWrite(pin_motor_A[0], HIGH);
   ledcWrite(CHANNEL_A, pwm);
 
   // 右モータ（CCW，反時計回り）
