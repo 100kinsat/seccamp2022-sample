@@ -122,7 +122,7 @@ void loop() {
 
 /** ボタンの割り込み関数 */
 void IRAM_ATTR onButton() {
-  if (millis() > interrupt_prev_ms + 500) {
+  if (millis() > interrupt_prev_ms + 500) { // チャタリング防止
     led_state = !led_state;
     state = (state + 1) % 3;
     interrupt_prev_ms = millis();
