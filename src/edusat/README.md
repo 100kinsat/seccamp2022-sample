@@ -6,6 +6,8 @@
 |- obniz.html  # ObnizのHTMLプログラム
 ```
 
+サンプルプログラムの動かし方は「[13. サンプルプログラムを動かす](../../doc/md/13.md)」を参照。
+
 # サンプルプログラムの動作
 
 サンプルプログラムはObnizへ各センサのデータを送信して、Obnizの実行画面でそれらの値を描画するプログラムとなっています。
@@ -15,6 +17,14 @@
 ## edusat.ino
 
 Arduino IDEで開きます。
+
+### 使用ライブラリ
+
+|ライブラリ名|URL|
+|:---|:---|
+|MPU9250.h|https://github.com/hideakitai/MPU9250|
+|obniz.h|https://obniz.com/ja/doc/reference/obnizos-for-esp32/plugin/|
+|TinyGPSPlus.h|https://github.com/mikalhart/TinyGPSPlus|
 
 ### setup()
 
@@ -51,3 +61,5 @@ Arduino IDEで開きます。
 ## obniz.html
 
 Obnizの開発者コンソールで開きます。
+
+CanSatから送信したデータを受け取って、ブラウザの画面に表示するプログラムとなっています。
