@@ -17,7 +17,7 @@ const float nn = 0.0;
 const float beep_wakeup[7] = {mE * 4, mA * 4, mB * 4, mA * 4, mE * 2, mE * 4, mB * 4}; // 起動音
 const float beep_start[3] = {mC * 2, mD * 2, mE * 2};
 const float beep_end[3] = {mE * 2, mD * 2, mC * 2};
-const float beep_error[3] = {mE * 4, mE * 4, mE * 4};
+const float beep_error[5] = {mE * 4, mE * 4, mE * 4, mE * 4, mE * 4};
 
 MPU9250 mpu;
 TinyGPSPlus gps;
@@ -317,7 +317,7 @@ void pin_init() {
 void sd_init() {
   if (!SD.begin()) {
     Serial.println("Card mount failed.");
-    beep(beep_error, sizeof(beep_error) / sizeof(float), 180);
+    beep(beep_error, sizeof(beep_error) / sizeof(float), 100);
     return;
   }
   uint8_t cardType = SD.cardType();
@@ -325,7 +325,7 @@ void sd_init() {
   if (cardType == CARD_NONE) {
     Serial.println("No SD card attached.");
     // 初期化に失敗したらエラー音を鳴らす
-    beep(beep_error, sizeof(beep_error) / sizeof(float), 180);
+    beep(beep_error, sizeof(beep_error) / sizeof(float), 100);
     return;
   }
 
@@ -344,7 +344,6 @@ void sd_init() {
   Serial.printf("SD Card Size: %lluMB\n", cardSize);
 
   writeFile(SD, "/100kinsat.txt", "Hello 100kinSAT!!!");
-  writeFile(SD, "/2022-06-18-build-check.txt", "動作確認: 2022年6月18日");
 }
 
 /** 9軸センサの初期化処理 */
@@ -352,11 +351,11 @@ void mpu_init() {
   Wire.begin();
   delay(2000);
 
-  // if (!mpu.setup(0x69)) { // サイとハリネズミはI2Cアドレスが違う
+  // if (!mpu.setup(0x69)) { // サイはI2Cアドレスが違う
   if (!mpu.setup(0x68)) {
     Serial.println("MPU connection failed.");
     // 初期化に失敗したらエラー音を鳴らす
-    beep(beep_error, sizeof(beep_error) / sizeof(float), 180);
+    beep(beep_error, sizeof(beep_error) / sizeof(float), 100);
     return;
   }
   mpu.setMagneticDeclination(-7.49); // 磁気偏角の設定（府中駅: -7.49）
