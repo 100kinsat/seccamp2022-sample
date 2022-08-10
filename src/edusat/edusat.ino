@@ -70,8 +70,12 @@ enum {
 /** CanSatの状態遷移ステータス */
 volatile int state = ST_STAND_BY;
 
-float goal_lat = 35.676975;  // ゴールの緯度
+// float goal_lat = 35.677601;  // ゴールの緯度、クロスウェーブ
+// float goal_lng = 139.469879; // ゴールの経度
+float goal_lat = 35.676975;  // ゴールの緯度、陸上競技場
 float goal_lng = 139.475372; // ゴールの経度
+// float goal_lat = 35.679804;  // ゴールの緯度、ヒノデ東京営業所
+// float goal_lng = 139.465878; // ゴールの経度
 
 /**
  * setup関数
@@ -151,7 +155,7 @@ void updateMPUValTask(void *pvParameters) {
       }
       sensorVal.roll = mpu.getRoll();
       sensorVal.pitch = mpu.getPitch();
-      sensorVal.yaw = mpu.getYaw();
+      sensorVal.yaw = mpu.getYaw() + 180; // 北:0、東:90、南:180、西:270となるように180を足す
     }
     delay(10);
   }
@@ -262,6 +266,7 @@ void stand_by() {
   digitalWrite(pin_led, led_state);
 }
 
+bool prestate = false;
 /** 目標地点へ走行 */
 void drive() {
   // 移動前の緯度・経度を取得
@@ -269,28 +274,38 @@ void drive() {
   double before_lng = sensorVal.lng;
   // ゴールとの距離を計算
   double before_dist2goal = gps.distanceBetween(before_lat, before_lng, goal_lat, goal_lng);
+  Serial.print("before_dist2goal: "); Serial.println(before_dist2goal);
   // ゴールとの距離が5メートル以下ならゴール状態へ遷移
-  if (before_dist2goal < 5) {
-    state = ST_GOAL;
-    return;
+  if (before_dist2goal < 2) {
+    if (prestate) {
+      state = ST_GOAL;
+      return;
+    } else {
+      prestate = true;
+    }
   }
   // ゴールとの角度を計算
   double course2goal = gps.courseTo(before_lat, before_lng, goal_lat, goal_lng);
+  Serial.print("course2goal: "); Serial.println(course2goal);
   // cansatの向きと比較
   double course_diff = course2goal - sensorVal.yaw;
+  Serial.print("yaw: "); Serial.println(sensorVal.yaw);
+  Serial.print("course_diff: "); Serial.println(course_diff);
   // ゴールへ方向転換
   if (course_diff > 0) {
-    turn_right(200);
-    delay((int)(100 * abs(course_diff)));
+    Serial.println("turn right");
+    turn_right(100);
+    delay((int)(14 * abs(course_diff)));
     stop();
   } else {
-    turn_left(200);
-    delay((int)(100 * abs(course_diff)));
+    Serial.println("turn left");
+    turn_left(100);
+    delay((int)(14 * abs(course_diff)));
     stop();
   }
   // 10秒直進する
   forward(255);
-  delay(10000);
+  delay(5000);
   stop();
 }
 
