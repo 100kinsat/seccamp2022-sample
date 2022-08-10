@@ -290,7 +290,7 @@ void drive() {
   if (course_diff > 0) {
     Serial.println("turn right");
     turn_right(100);
-    delay((int)(14 * abs(course_diff)));
+    delay((int)(14 * abs(course_diff)));  // 旋回の秒数は目標地点の方角と機体の向きの差に応じて変化させる（14という値は実験してちょうどいい値を見つけて設定した）
     stop();
   } else {
     Serial.println("turn left");
