@@ -112,6 +112,8 @@ void loop() {
     Serial.println("*** ST_DRIVE ***");
     beep(beep_start,1,150);
     drive();
+    Serial.println(gps.location.lat());
+    Serial.println(gps.location.lng());
     break;
 
   case ST_GOAL:
@@ -270,9 +272,9 @@ void drive() {
   delay(5000);
   stop();
   delay(2000);
-  back(100);
+  right(100);
   delay(5000);
-  stop();
+  left(100);
   delay(2000);
 }
 
@@ -410,6 +412,37 @@ void forward(int pwm) {
   digitalWrite(pin_motor_B[0], HIGH);
   ledcWrite(CHANNEL_B, pwm);
 }
+
+void right(int pwm) {
+  if (pwm < 0) pwm = 0;
+  if (pwm > 255) pwm = 255;
+
+  // 左モータ（CCW，反時計回り）
+  digitalWrite(pin_motor_A[0], LOW);
+  digitalWrite(pin_motor_A[0], LOW);
+  ledcWrite(CHANNEL_A, pwm);
+
+  // 右モータ（CW，時計回り）
+  digitalWrite(pin_motor_B[1], LOW);
+  digitalWrite(pin_motor_B[0], HIGH);
+  ledcWrite(CHANNEL_B, pwm);
+}
+
+void left(int pwm) {
+  if (pwm < 0) pwm = 0;
+  if (pwm > 255) pwm = 255;
+
+  // 左モータ（CCW，反時計回り）
+  digitalWrite(pin_motor_A[0], LOW);
+  digitalWrite(pin_motor_A[1], HIGH);
+  ledcWrite(CHANNEL_A, pwm);
+
+  // 右モータ（CW，時計回り）
+  digitalWrite(pin_motor_B[1], LOW);
+  digitalWrite(pin_motor_B[0], LOW);
+  ledcWrite(CHANNEL_B, pwm);
+}
+
 
 /** 後退 */
 void back(int pwm) {
