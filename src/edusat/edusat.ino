@@ -89,7 +89,7 @@ void setup() {
   // 初期化処理
   obniz_init();
   pin_init();
-  sd_init();
+  // sd_init();
   mpu_init();
   gps_init();
 
@@ -266,7 +266,6 @@ void stand_by() {
   digitalWrite(pin_led, led_state);
 }
 
-bool prestate = false;
 /** 目標地点へ走行 */
 void drive() {
   // 移動前の緯度・経度を取得
@@ -276,13 +275,9 @@ void drive() {
   double before_dist2goal = gps.distanceBetween(before_lat, before_lng, goal_lat, goal_lng);
   Serial.print("before_dist2goal: "); Serial.println(before_dist2goal);
   // ゴールとの距離が5メートル以下ならゴール状態へ遷移
-  if (before_dist2goal < 2) {
-    if (prestate) {
-      state = ST_GOAL;
-      return;
-    } else {
-      prestate = true;
-    }
+  if (before_dist2goal < 5) {
+    state = ST_GOAL;
+    return;
   }
   // ゴールとの角度を計算
   double course2goal = gps.courseTo(before_lat, before_lng, goal_lat, goal_lng);
@@ -303,7 +298,7 @@ void drive() {
     delay((int)(14 * abs(course_diff)));
     stop();
   }
-  // 10秒直進する
+  // 5秒直進する
   forward(255);
   delay(5000);
   stop();
@@ -311,6 +306,10 @@ void drive() {
 
 /** 目標地点に到着 */
 void goal() {
+  digitalWrite(pin_led, HIGH);
+  delay(500);
+  digitalWrite(pin_led, LOW);
+  delay(500);
 }
 
 /** ObnizOSの初期化処理 */
@@ -391,8 +390,8 @@ void mpu_init() {
   Wire.begin();
   delay(2000);
 
-  // if (!mpu.setup(0x69)) { // サイはI2Cアドレスが違う
-  if (!mpu.setup(0x68)) {
+  if (!mpu.setup(0x69)) { // サイはI2Cアドレスが違う
+  // if (!mpu.setup(0x68)) {
     Serial.println("MPU connection failed.");
     // 初期化に失敗したらエラー音を鳴らす
     beep(beep_error, sizeof(beep_error) / sizeof(float), 100);
