@@ -4,6 +4,21 @@
 #include "SPI.h"
 #include <obniz.h>
 #include <TinyGPSPlus.h>
+#include <math.h> /* atan/sqrt/pow */
+
+// 円周率
+#define PI (3.14159265358979323846264338327950288)
+// 地球の半径 [m]
+#define RADIUS_OF_THE_EARTH (149597870700)
+
+// ゴールの緯度。北緯 35.676960 [°]
+const float goal_lat = 35.676960;
+// ゴールの経度。東経 139.475372 [°]
+const float goal_lng = 139.475372;
+// ゴールの緯度のラジアン表記
+const float goal_lat_rad = 0.622680;
+// ゴールの経度のラジアン表記
+const float goal_lng_rad = 2.434304;
 
 const float mC = 261.626; // ド
 const float mD = 293.665; // レ
@@ -41,7 +56,7 @@ const uint8_t pin_gps_rx     = 17;
 const int CHANNEL_A = 0; // PWMA
 const int CHANNEL_B = 1; // PWMB
 const int CHANNEL_C = 2; // Speaker
- 
+
 const int LEDC_TIMER_8_BIT    = 8;
 const int LEDC_TIMER_13_BIT   = 13;
 const int LEDC_BASE_FREQ_490  = 490;
@@ -56,6 +71,10 @@ struct SensorVal {
   float yaw;
   float lat;
   float lng;
+  float lat_rad;      // 現在地の経度 (ラジアン)
+  float lng_rad;      // 現在地の緯度 (ラジアン)
+  float lat_rad_diff; // 現在地の経度とゴールの経度の差 (ラジアン)
+  float lng_rad_diff; // 現在地の緯度とゴールの緯度の差 (ラジアン)
 } sensorVal;
 
 /** CanSatの状態遷移用の列挙型 */
@@ -106,6 +125,7 @@ void loop() {
 
   case ST_DRIVE:
     Serial.println("*** ST_DRIVE ***");
+    printCurrentPosition()
     drive();
     break;
 
@@ -113,11 +133,25 @@ void loop() {
     Serial.println("*** ST_GOAL ***");
     goal();
     break;
-  
+
   default:
     break;
   }
   delay(200);
+}
+
+/**
+ * toRadian()は度数degreeをラジアンに変換します
+ */
+float toRadian(float degree) {
+  return degree * (PI / 180);
+}
+
+/**
+ * toDegree()はラジアンradianを度数に変換します
+ */
+float toDegree(float radian) {
+  return radian * (180 / PI);
 }
 
 /** ボタンの割り込み関数 */
@@ -183,9 +217,13 @@ void updateGPSValTask(void *pvParameters) {
       if (gps.location.isUpdated()) {
         sensorVal.lat = gps.location.lat();
         sensorVal.lng = gps.location.lng();
+        sensorVal.lat_rad = toRadian(gps.location.lat());
+        sensorVal.lng_rad = toRadian(gps.location.lng());
+        sensorVal.lad_rad_diff = sensorVal.lat_rad - goal_lat_rad;
+        sensorVal.lng_rad_diff = sensorVal.lng_rad - goal_lng_rad;
       }
     }
-    delay(5000);
+    delay(100);
   }
 }
 
@@ -485,4 +523,47 @@ void tone(int pin, int freq, int t_ms) {
 
 void noTone(int pin) {
   ledcWriteTone(CHANNEL_C, 0.0);
+}
+
+/**
+ * getAngleOfCurrentPosition()は原点をゴールとし東をx軸方向、北をy軸方向とした際、x軸と原点から見たcansatの方向のなす角を度数[°]で返します
+ */
+float getAngleOfCurrentPosition() {
+  float theta = atan(sensorVal.lng_rad_diff/sensorVal.lat_rad_diff);
+  return toDegree(theta);
+}
+
+/**
+ * getDistanceToGoal()は現在地とゴールの間の距離[m]を返します
+ */
+float getDistanceToGoal() {
+  return RADIUS_OF_THE_EARTH * sqrt(pow(sensorVal.lat_rad_diff, 2.0), pow(sensorVal.lat_rad_diff, 2.0));
+}
+
+// デバッグ用関数
+
+/**
+ * printCurrentPosition()は現在地情報(北緯, 東経, ゴールまでの距離)を以下のフォーマットでシリアルポートに出力します
+ * ----- 現在地情報 -----
+ * 北緯: 35.676960 [°]
+ * 東経: 139.475372 [°]
+ * 角度: 40.000001 [°]
+ * ゴールまでの距離: 10.000001 [m]
+ * -----------------
+ */
+float printCurrentPosition() {
+  Serial.println("----- 現在地情報 -----");
+  Serial.print("北緯: ");
+  Serial.print(gps.location.lat());
+  Serial.prinln(" [°]")
+  Serial.print("東経: ");
+  Serial.print(sensorVal.lng = gps.location.lng());
+  Serial.prinln(" [°]")
+  Serial.print("角度: ");
+  Serial.print(getAngleOfCurrentPosition());
+  Serial.prinln(" [°]")
+  Serial.print("ゴールまでの距離: ");
+  Serial.print(getDistanceToGoal());
+  Serial.prinln(" [m]")
+  Serial.println("-----------------");
 }
