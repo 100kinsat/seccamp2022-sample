@@ -3,6 +3,8 @@
 #include "SD.h"
 #include "SPI.h"
 #include <obniz.h>
+
+
 #include <TinyGPSPlus.h>
 
 const float mC = 261.626; // ド
@@ -67,6 +69,9 @@ enum {
 
 /** CanSatの状態遷移ステータス */
 volatile int state = ST_STAND_BY;
+
+float goal_lat = 35.676975;  // ゴールの緯度
+float goal_lng = 139.475372; // ゴールの経度
 
 /**
  * setup関数
@@ -259,14 +264,34 @@ void stand_by() {
 
 /** 目標地点へ走行 */
 void drive() {
+  // 移動前の緯度・経度を取得
+  double before_lat = sensorVal.lat;
+  double before_lng = sensorVal.lng;
+  // ゴールとの距離を計算
+  double before_dist2goal = gps.distanceBetween(before_lat, before_lng, goal_lat, goal_lng);
+  // ゴールとの距離が5メートル以下ならゴール状態へ遷移
+  if (before_dist2goal < 5) {
+    state = ST_GOAL;
+    return;
+  }
+  // ゴールとの角度を計算
+  double course2goal = gps.courseTo(before_lat, before_lng, goal_lat, goal_lng);
+  // cansatの向きと比較
+  double course_diff = course2goal - sensorVal.yaw;
+  // ゴールへ方向転換
+  if (course_diff > 0) {
+    turn_right(200);
+    delay((int)(100 * abs(course_diff)));
+    stop();
+  } else {
+    turn_left(200);
+    delay((int)(100 * abs(course_diff)));
+    stop();
+  }
+  // 10秒直進する
   forward(255);
-  delay(5000);
+  delay(10000);
   stop();
-  delay(2000);
-  back(100);
-  delay(5000);
-  stop();
-  delay(2000);
 }
 
 /** 目標地点に到着 */
@@ -396,6 +421,38 @@ void forward(int pwm) {
   // 左モータ（CCW，反時計回り）
   digitalWrite(pin_motor_A[0], LOW);
   digitalWrite(pin_motor_A[1], HIGH);
+  ledcWrite(CHANNEL_A, pwm);
+
+  // 右モータ（CW，時計回り）
+  digitalWrite(pin_motor_B[1], LOW);
+  digitalWrite(pin_motor_B[0], HIGH);
+  ledcWrite(CHANNEL_B, pwm);
+}
+
+/** 右へ旋回 */
+void turn_right(int pwm) {
+  if (pwm < 0) pwm = 0;
+  if (pwm > 255) pwm = 255;
+
+  // 左モータ（CCW，反時計回り）
+  digitalWrite(pin_motor_A[0], LOW);
+  digitalWrite(pin_motor_A[1], HIGH);
+  ledcWrite(CHANNEL_A, pwm);
+
+  // 右モータ（CCW，反時計回り）
+  digitalWrite(pin_motor_B[0], LOW);
+  digitalWrite(pin_motor_B[1], HIGH);
+  ledcWrite(CHANNEL_B, pwm);
+}
+
+/** 左へ旋回 */
+void turn_left(int pwm) {
+  if (pwm < 0) pwm = 0;
+  if (pwm > 255) pwm = 255;
+
+  // 左モータ（CW，時計回り）
+  digitalWrite(pin_motor_A[1], LOW);
+  digitalWrite(pin_motor_A[0], HIGH);
   ledcWrite(CHANNEL_A, pwm);
 
   // 右モータ（CW，時計回り）
