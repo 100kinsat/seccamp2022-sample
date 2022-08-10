@@ -52,6 +52,9 @@ const int LEDC_BASE_FREQ_5000 = 490;
 volatile byte led_state = LOW;
 volatile long interrupt_prev_ms = millis();
 
+float goal_lat = 35.676975;
+float goal_lng = 139.475372;
+
 struct SensorVal {
   float roll;
   float pitch;
@@ -101,6 +104,11 @@ void setup() {
 void loop() {
   switch (state)
   {
+  if (gps.location.lat() < goal_lat - 0.000005 && goal_lat + 1 < gps.location.lat() + 0.000005) {
+      if (gps.location.lng() < goal_lng - 0.000005 && goal_lng + 1 < gps.location.lng() + 0.000005) {
+          state = ST_GOAL;
+      }
+  }
   case ST_STAND_BY:
     Serial.println("*** ST_STAND_BY ***");
     //beep(const float *mm, int m_size, int t_ms) {
