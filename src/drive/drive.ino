@@ -18,6 +18,8 @@ const float beep_wakeup[7] = {mE * 4, mA * 4, mB * 4, mA * 4, mE * 2, mE * 4, mB
 const float beep_start[3] = {mC * 2, mD * 2, mE * 2};
 const float beep_end[3] = {mE * 2, mD * 2, mC * 2};
 const float beep_error[5] = {mE * 4, mE * 4, mE * 4, mE * 4, mE * 4};
+const float beep_ST_STANDBY[1]={mC*2};
+
 
 MPU9250 mpu;
 TinyGPSPlus gps;
@@ -97,29 +99,30 @@ void setup() {
  * 繰り返し実行される
  */
 void loop() {
-  state = ST_DRIVE;
   switch (state)
   {
   case ST_STAND_BY:
-   Serial.println("*** ST_STAND_BY ***");
-   stand_by();
-   break;
-  
+    Serial.println("*** ST_STAND_BY ***");
+    //beep(const float *mm, int m_size, int t_ms) {
+    beep(beep_ST_STANDBY,1,150);
+    stand_by();
+    break;
+
   case ST_DRIVE:
     Serial.println("*** ST_DRIVE ***");
+    beep(beep_start,1,150);
     drive();
-    
-    Serial.println(gps.location.lat());
-    Serial.println(gps.location.lng());
     break;
-  
+
   case ST_GOAL:
     Serial.println("*** ST_GOAL ***");
+    led_state=!led_state;
+    digitalWrite(pin_led, led_state);
     goal();
     break;
   
   default:
-   break;
+    break;
   }
   delay(200);
 }
@@ -267,9 +270,9 @@ void drive() {
   delay(5000);
   stop();
   delay(2000);
-  right(100);
+  back(100);
   delay(5000);
-  left(100);
+  stop();
   delay(2000);
 }
 
@@ -407,37 +410,6 @@ void forward(int pwm) {
   digitalWrite(pin_motor_B[0], HIGH);
   ledcWrite(CHANNEL_B, pwm);
 }
-
-void right(int pwm) {
-  if (pwm < 0) pwm = 0;
-  if (pwm > 255) pwm = 255;
-
-  // 左モータ（CCW，反時計回り）
-  digitalWrite(pin_motor_A[0], LOW);
-  digitalWrite(pin_motor_A[0], LOW);
-  ledcWrite(CHANNEL_A, pwm);
-
-  // 右モータ（CW，時計回り）
-  digitalWrite(pin_motor_B[1], LOW);
-  digitalWrite(pin_motor_B[0], HIGH);
-  ledcWrite(CHANNEL_B, pwm);
-}
-
-void left(int pwm) {
-  if (pwm < 0) pwm = 0;
-  if (pwm > 255) pwm = 255;
-
-  // 左モータ（CCW，反時計回り）
-  digitalWrite(pin_motor_A[0], LOW);
-  digitalWrite(pin_motor_A[1], HIGH);
-  ledcWrite(CHANNEL_A, pwm);
-
-  // 右モータ（CW，時計回り）
-  digitalWrite(pin_motor_B[1], LOW);
-  digitalWrite(pin_motor_B[0], LOW);
-  ledcWrite(CHANNEL_B, pwm);
-}
-
 
 /** 後退 */
 void back(int pwm) {
