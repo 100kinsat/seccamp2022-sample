@@ -66,7 +66,7 @@ enum {
 };
 
 /** CanSatの状態遷移ステータス */
-volatile int state = ST_STAND_BY;
+volatile int state = ST_DRIVE;
 
 /**
  * setup関数
@@ -259,11 +259,14 @@ void stand_by() {
 
 /** 目標地点へ走行 */
 void drive() {
-  forward(255);
+  turn_right(255);
   delay(5000);
   stop();
   delay(2000);
-  back(100);
+  forward(255);
+  delay(5000);
+  stop();
+  turn_left(100);
   delay(5000);
   stop();
   delay(2000);
@@ -417,6 +420,38 @@ void back(int pwm) {
   // 右モータ（CCW，反時計回り）
   digitalWrite(pin_motor_B[0], LOW);
   digitalWrite(pin_motor_B[1], HIGH);
+  ledcWrite(CHANNEL_B, pwm);
+}
+
+// turn right
+void turn_right(int pwm) {
+   if (pwm < 0) pwm = 0;
+  if (pwm > 255) pwm = 255;
+
+  // 左モータ（CCW，反時計回り）
+  digitalWrite(pin_motor_A[0], LOW);
+  digitalWrite(pin_motor_A[1], HIGH);
+  ledcWrite(CHANNEL_A, pwm);
+
+  // 右モータ（CW，時計回り）
+  digitalWrite(pin_motor_B[1], LOW);
+  digitalWrite(pin_motor_B[0], HIGH);
+  ledcWrite(CHANNEL_B, pwm / 2);
+}
+
+// turn left
+void turn_left(int pwm) {
+   if (pwm < 0) pwm = 0;
+  if (pwm > 255) pwm = 255;
+
+  // 左モータ（CCW，反時計回り）
+  digitalWrite(pin_motor_A[0], LOW);
+  digitalWrite(pin_motor_A[1], HIGH);
+  ledcWrite(CHANNEL_A, pwm / 2);
+
+  // 右モータ（CW，時計回り）
+  digitalWrite(pin_motor_B[1], LOW);
+  digitalWrite(pin_motor_B[0], HIGH);
   ledcWrite(CHANNEL_B, pwm);
 }
 
